@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: dd2ba026642b4964eb50d0999fea4808
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215752
+  packageName: High Res PBR Sword and Sheath
+  packageVersion: 1.0
+  assetPath: Assets/Sword_Sheath_PBR/Materials/Sheath.mat
+  uploadId: 486281
