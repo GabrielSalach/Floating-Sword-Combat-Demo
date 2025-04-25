@@ -364,7 +364,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 513112615086b6b4f90875d385ba5495, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 50
+  player: {fileID: 0}
+  bobbingSpeed: 0
+  bobbingAmplitude: 0
+  offset: {x: 0, y: 0, z: 0}
+  _targets: []
 --- !u!136 &391171484
 CapsuleCollider:
   m_ObjectHideFlags: 0

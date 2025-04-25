@@ -1,0 +1,4 @@
+TODO: 
+- Create Spline at runtime and make sword follow it 
+
+DONE:
