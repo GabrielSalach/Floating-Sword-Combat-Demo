@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Events;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
