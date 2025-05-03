@@ -14,7 +14,8 @@ public class SwordController : MonoBehaviour
     [SerializeField]
     private List<Transform> targets;
 
-    [Header("Animation")] 
+    [Header("Animation")]
+    public float swordSpeed = 1;
     public float slashDelay = 0.2f;
     public float slashSpeed = 0.1f;
 
@@ -59,31 +60,49 @@ public class SwordController : MonoBehaviour
     private IEnumerator ExecuteSlashes(List<Transform> enemies)
     {
         _isSlashing = true;
-        _swordModel.transform.rotation = Quaternion.Euler(new Vector3(0, 90, 0));
-        
-        foreach (Transform enemy in enemies.Where(enemy => enemy is not null))
+        _swordModel.transform.DORotate(new Vector3(90, 90, -90), slashDelay);
+
+        for (int i = 0; i < enemies.Count; i++)
         {
+            if (enemies[0] is null)
+                continue;
+            
+            Vector3 startPos;
+            Vector3 endPos;
+            
             // Computing slash direction and positions
-            Vector3 direction = (transform.position - enemy.position).normalized;
+            Vector3 direction = (transform.position - enemies[i].position).normalized;
             Vector3 slashOffset = Vector3.Cross(direction, Vector3.up) * 1f; // Décalage latéral
+            
+            if (i % 2 == 0)
+            {
+                startPos = enemies[i].position + slashOffset + Vector3.up * (enemies[i].transform.localScale.y/4);
+                endPos = enemies[i].position - slashOffset - Vector3.up * (enemies[i].transform.localScale.y/4);
+            }
+            else
+            {
+                startPos = enemies[i].position - slashOffset - Vector3.up * (enemies[i].transform.localScale.y/4);
+                endPos = enemies[i].position + slashOffset + Vector3.up * (enemies[i].transform.localScale.y/4);
+            }
 
-            Vector3 startPos = enemy.position + slashOffset;
-            Vector3 endPos = enemy.position - slashOffset;
-
-
+            Sequence seq = DOTween.Sequence();
+            
             // Move towards enemy
-            transform.DOMove(startPos, slashDelay).DOTimeScale(0.1f, 0);
-            transform.DOLookAt(enemy.position, slashDelay);
+            transform.DOLookAt(enemies[i].position, slashDelay);
+            seq.Append(transform.DOMove(startPos, i == 0 ? swordSpeed : slashDelay).SetEase(Ease.OutBack));
             
             // Slash
-            transform.DOMove(endPos, slashSpeed).DOTimeScale(0.1f, 0);
+            seq.Append(transform.DOMove(endPos, slashSpeed));
+            
+            seq.Play();
 
-            yield return new WaitForSeconds(slashDelay);
+            yield return seq.WaitForCompletion();
         }
         
         // Return to player 
-        transform.DOMove(player.position + offset, slashDelay);
-        _swordModel.transform.rotation = Quaternion.Euler(new Vector3(0, -90, 0));
+        transform.DOMove(player.position + offset, swordSpeed);
+        transform.DORotate(Vector3.zero, slashDelay);
+        _swordModel.transform.DORotate(Vector3.zero, slashDelay);
         
         _isSlashing = false;
     }
