@@ -21,10 +21,12 @@ public class SwordController : MonoBehaviour
 
     private bool _isSlashing;
     private GameObject _swordModel;
+    private AudioSource _audioSource;
 
     private void Awake()
     {
         _swordModel = GetComponentInChildren<MeshRenderer>().gameObject;
+        _audioSource = GetComponent<AudioSource>();
     }
     
     private void Update()
@@ -66,9 +68,10 @@ public class SwordController : MonoBehaviour
         {
             if (enemies[0] is null)
                 continue;
-            
+
             Vector3 startPos;
             Vector3 endPos;
+            Vector3 arcPoint;
             
             // Computing slash direction and positions
             Vector3 direction = (transform.position - enemies[i].position).normalized;
@@ -81,18 +84,41 @@ public class SwordController : MonoBehaviour
             }
             else
             {
-                startPos = enemies[i].position - slashOffset - Vector3.up * (enemies[i].transform.localScale.y/4);
-                endPos = enemies[i].position + slashOffset + Vector3.up * (enemies[i].transform.localScale.y/4);
+                startPos = enemies[i].position - slashOffset + Vector3.up * (enemies[i].transform.localScale.y/4);
+                endPos = enemies[i].position + slashOffset - Vector3.up * (enemies[i].transform.localScale.y/4);
             }
+            
+            
+            GameObject start = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            start.transform.position = startPos;
+            start.transform.localScale = Vector3.one * 0.05f;
+            start.GetComponent<MeshRenderer>().material.color = Color.red;
+            GameObject end = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            end.transform.position = endPos;
+            end.transform.localScale = Vector3.one * 0.05f;
+            end.GetComponent<MeshRenderer>().material.color = Color.green;
+            // GameObject arc = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            // arc.transform.position = arcPoint;
+            // arc.transform.localScale = Vector3.one * 0.05f;
+            // arc.GetComponent<MeshRenderer>().material.color = Color.blue;
 
             Sequence seq = DOTween.Sequence();
             
             // Move towards enemy
             transform.DOLookAt(enemies[i].position, slashDelay);
-            seq.Append(transform.DOMove(startPos, i == 0 ? swordSpeed : slashDelay).SetEase(Ease.OutBack));
+            seq.Append(transform.DOMove(startPos, slashDelay));
             
             // Slash
-            seq.Append(transform.DOMove(endPos, slashSpeed));
+            seq.Append(
+                transform.DOMove(endPos, slashSpeed)
+                .SetEase(Ease.OutBack)
+                .SetDelay(slashDelay)
+                .OnStart(() =>
+                {
+                    _audioSource.pitch = Random.Range(0.7f, 1.3f);
+                    _audioSource.Play();
+                })
+            );
             
             seq.Play();
 
@@ -100,10 +126,24 @@ public class SwordController : MonoBehaviour
         }
         
         // Return to player 
-        transform.DOMove(player.position + offset, swordSpeed);
+        Tweener tweener = transform.DOMove(player.position + offset, swordSpeed);
+        tweener.OnUpdate(() =>
+        {
+            if (!(Vector3.Distance(transform.position, player.position + offset) > 0.5f)) return;
+            
+            Vector3 newPosition = new Vector3(player.position.x, 0, player.position.z) + offset;
+            newPosition = RotatePointAroundPivot(newPosition, player.position, player.eulerAngles);
+            tweener.ChangeEndValue(newPosition, false);
+        });
+
         transform.DORotate(Vector3.zero, slashDelay);
         _swordModel.transform.DORotate(Vector3.zero, slashDelay);
         
         _isSlashing = false;
+    }
+
+    public void Contact()
+    {
+        Debug.Log("Contact");
     }
 }
