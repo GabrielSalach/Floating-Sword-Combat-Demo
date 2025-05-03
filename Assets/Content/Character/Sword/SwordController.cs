@@ -106,6 +106,7 @@ public class SwordController : MonoBehaviour
             
             // Move towards enemy
             transform.DOLookAt(enemies[i].position, slashDelay);
+            transform.position = DOCurve.C
             seq.Append(transform.DOMove(startPos, slashDelay));
             
             // Slash
@@ -127,23 +128,18 @@ public class SwordController : MonoBehaviour
         
         // Return to player 
         Tweener tweener = transform.DOMove(player.position + offset, swordSpeed);
-        tweener.OnUpdate(() =>
-        {
-            if (!(Vector3.Distance(transform.position, player.position + offset) > 0.5f)) return;
-            
-            Vector3 newPosition = new Vector3(player.position.x, 0, player.position.z) + offset;
-            newPosition = RotatePointAroundPivot(newPosition, player.position, player.eulerAngles);
-            tweener.ChangeEndValue(newPosition, false);
-        });
+        // tweener.OnUpdate(() =>
+        // {
+        //     if (!(Vector3.Distance(transform.position, player.position + offset) > 0.5f)) return;
+        //     
+        //     Vector3 newPosition = new Vector3(player.position.x, 0, player.position.z) + offset;
+        //     newPosition = RotatePointAroundPivot(newPosition, player.position, player.eulerAngles);
+        //     tweener.ChangeEndValue(newPosition, false);
+        // });
 
         transform.DORotate(Vector3.zero, slashDelay);
         _swordModel.transform.DORotate(Vector3.zero, slashDelay);
         
         _isSlashing = false;
-    }
-
-    public void Contact()
-    {
-        Debug.Log("Contact");
     }
 }

@@ -6840,7 +6840,7 @@ MonoBehaviour:
   look: {x: 0, y: 0}
   jump: 0
   sprint: 0
-  analogMovement: 0
+  analogMovement: 1
   cursorLocked: 1
   cursorInputForLook: 1
 --- !u!4 &272993188152429408
@@ -8454,7 +8454,7 @@ MonoBehaviour:
     m_ActionId: b6583563-1d25-4cee-a313-0c8b2c752a5b
     m_ActionName: 'Player/SwordAction[/Keyboard/q]'
   m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: 
+  m_DefaultControlScheme: Gamepad
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -10045,6 +10045,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ea365d15c2644008b264b05218169f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  controller: {fileID: 0}
 --- !u!114 &9078993846310988380
 MonoBehaviour:
   m_ObjectHideFlags: 0
