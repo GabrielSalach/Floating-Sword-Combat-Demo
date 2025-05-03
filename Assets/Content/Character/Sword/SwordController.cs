@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,31 +10,33 @@ public class SwordController : MonoBehaviour
     [Header("Player Tracking")]
     public Transform player;
     public Vector3 offset;
-    
+    [Header("Targets tracking")]
     [SerializeField]
-    private List<Transform> _targets;
-    
-    public float speed = 20f;
-    public float stopDistance = 0.5f;
+    private List<Transform> targets;
+
+    [Header("Animation")] 
     public float slashDelay = 0.2f;
+    public float slashSpeed = 0.1f;
 
-    private bool isSlashing = false;
+    private bool _isSlashing;
+    private GameObject _swordModel;
 
-    private void Start()
+    private void Awake()
     {
-        Time.timeScale = 0.3f;
-        Time.fixedDeltaTime = Time.timeScale * 0.3f;
+        _swordModel = GetComponentInChildren<MeshRenderer>().gameObject;
     }
     
     private void Update()
     {
-        if (isSlashing == false)
+        if (_isSlashing == false)
         {
-            transform.position = player.position + offset;
+            Vector3 newPosition = new Vector3(player.position.x, 0, player.position.z) + offset;
+            transform.position = RotatePointAroundPivot(newPosition, player.position, player.eulerAngles);
+            transform.rotation =  player.rotation;
         }
     }
     
-    private Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Vector3 angles) {
+    private static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Vector3 angles) {
         return Quaternion.Euler(angles) * (point - pivot) + pivot;
     }
 
@@ -40,78 +44,47 @@ public class SwordController : MonoBehaviour
     {
         if (context.started)
         {
-            Debug.Log("Start");
             LockMode();
         } else if (context.canceled)
         {
-            Debug.Log("End");
-            isSlashing = true;
-            StartCoroutine(ExecuteSlashes(_targets));
+            StartCoroutine(ExecuteSlashes(targets));
         }
     }
 
-    private void LockMode()
+    private static void LockMode()
     {
         
     }
-    
-    private IEnumerator ReleaseMode() 
+
+    private IEnumerator ExecuteSlashes(List<Transform> enemies)
     {
-        yield return null;
-    }
-    
-    public IEnumerator ExecuteSlashes(List<Transform> enemies)
-    {
-        foreach (Transform enemy in enemies)
+        _isSlashing = true;
+        _swordModel.transform.rotation = Quaternion.Euler(new Vector3(0, 90, 0));
+        
+        foreach (Transform enemy in enemies.Where(enemy => enemy is not null))
         {
-            if (enemy == null) continue;
+            // Computing slash direction and positions
+            Vector3 direction = (transform.position - enemy.position).normalized;
+            Vector3 slashOffset = Vector3.Cross(direction, Vector3.up) * 1f; // Décalage latéral
 
-            while (Vector3.Distance(transform.position, enemy.position) > stopDistance)
-            {
-                transform.position = Vector3.MoveTowards(transform.position, enemy.position, speed * Time.deltaTime);
-                transform.LookAt(enemy);
-                yield return null;
-            }
+            Vector3 startPos = enemy.position + slashOffset;
+            Vector3 endPos = enemy.position - slashOffset;
 
-            // Déclenchement de l'animation procédurale
-            StartCoroutine(SlashAnimation(enemy));
+
+            // Move towards enemy
+            transform.DOMove(startPos, slashDelay).DOTimeScale(0.1f, 0);
+            transform.DOLookAt(enemy.position, slashDelay);
+            
+            // Slash
+            transform.DOMove(endPos, slashSpeed).DOTimeScale(0.1f, 0);
 
             yield return new WaitForSeconds(slashDelay);
         }
-
-        // Retour à la position idle
-        while (Vector3.Distance(transform.position, player.position + offset) > 0.1f)
-        {
-            transform.position = Vector3.MoveTowards(transform.position, player.position + offset, speed * Time.deltaTime);
-            transform.LookAt(player.position + offset);
-            yield return null;
-        }
-
-        isSlashing = false;
-    }
-    IEnumerator SlashAnimation(Transform enemy)
-    {
-        Vector3 startPos = transform.position;
-        Vector3 direction = (transform.position - enemy.position).normalized;
-        Vector3 slashOffset = Vector3.Cross(direction, Vector3.up) * 1f; // Décalage latéral
-
-        Vector3 midPos = enemy.position + slashOffset;
-        Vector3 endPos = enemy.position - slashOffset;
-
-        float duration = 0.1f;
-        float elapsed = 0f;
-
-        // Slash de gauche à droite
-        while (elapsed < duration)
-        {
-            transform.position = Vector3.Lerp(midPos, endPos, elapsed / duration);
-            transform.LookAt(enemy);
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        transform.position = endPos;
-
-        // Tu peux ajouter ici un effet de particules, son, etc.
+        
+        // Return to player 
+        transform.DOMove(player.position + offset, slashDelay);
+        _swordModel.transform.rotation = Quaternion.Euler(new Vector3(0, -90, 0));
+        
+        _isSlashing = false;
     }
 }
