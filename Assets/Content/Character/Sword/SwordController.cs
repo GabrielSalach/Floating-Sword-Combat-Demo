@@ -24,11 +24,14 @@ public class SwordController : MonoBehaviour
     private bool _isSlashing;
     private GameObject _swordModel;
     private AudioSource _audioSource;
+    
+    private LockMode _lockMode;
 
     private void Awake()
     {
         _swordModel = GetComponentInChildren<MeshRenderer>().gameObject;
         _audioSource = GetComponent<AudioSource>();
+        _lockMode = GetComponentInChildren<LockMode>();
     }
     
     private void Update()
@@ -52,13 +55,22 @@ public class SwordController : MonoBehaviour
             LockMode();
         } else if (context.canceled)
         {
-            StartCoroutine(ExecuteSlashes(targets));
+            StartCoroutine(ExecuteSlashes(_lockMode.StopCapture()));
         }
     }
 
-    private static void LockMode()
+    private void LockMode()
     {
-        
+         _lockMode.StartCapture(4);
+    }
+
+    private GameObject CreateGizmo(Color color, Vector3 position)
+    {
+        GameObject gizmo = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        gizmo.transform.position = position;
+        gizmo.transform.localScale = Vector3.one * 0.2f;
+        gizmo.GetComponent<Renderer>().material.color = color;
+        return gizmo;
     }
 
     private IEnumerator ExecuteSlashes(List<Transform> enemies)
@@ -96,22 +108,28 @@ public class SwordController : MonoBehaviour
             Vector3 controlDirection = (secondVec - projection).normalized;
             startSlashIn = Vector3.Lerp(transform.position, startSlashPos, 0.3f) + controlDirection;
             startSlashOut = Vector3.Lerp(transform.position, startSlashPos, 0.7f) + controlDirection;
-            endSlashIn = Vector3.Lerp(transform.position, startSlashPos, 0.3f);
-            endSlashOut = Vector3.Lerp(transform.position, startSlashPos, 0.7f);
+            endSlashIn = Vector3.Lerp(endSlashPos, startSlashPos, 0.3f);
+            endSlashOut = Vector3.Lerp(endSlashPos, startSlashPos, 0.7f);
             
+            // List<GameObject> gizmos = new List<GameObject>();
+            //
+            // gizmos.Add(CreateGizmo(Color.red, startSlashPos));
+            // gizmos.Add(CreateGizmo(Color.orange, startSlashIn));
+            // gizmos.Add(CreateGizmo(Color.yellow, startSlashOut));
+            // gizmos.Add(CreateGizmo(Color.blue, endSlashPos));
+            // gizmos.Add(CreateGizmo(Color.cyan, endSlashIn));
+            // gizmos.Add(CreateGizmo(Color.green, endSlashOut));
             
-
-            
-            // Move towards enemy
+            // Path
             transform.DOLookAt(enemies[i].position, slashDuration);
-            // seq.Append(transform.DOMove(startSlashPos, slashDelay));
             Tweener tween = transform
                 .DOPath(
-                    new Vector3[] { startSlashPos, startSlashIn, startSlashOut, endSlashPos, endSlashIn, endSlashOut },
+                    new[] { startSlashPos, startSlashIn, startSlashOut, endSlashPos, endSlashIn, endSlashOut },
                     slashDuration, PathType.CubicBezier)
                 .SetEase(SwordAnimationCurve)
                 .OnWaypointChange(_value =>
                 {
+                    Debug.Log(_value);
                     if (_value != 3) return;
                     
                     _audioSource.pitch = Random.Range(0.7f, 1.3f);
@@ -119,30 +137,15 @@ public class SwordController : MonoBehaviour
                 })
                 .SetDelay(slashCooldown);
             
-            // Slash
-            // seq.Append(
-            //     transform.DOMove(endSlashPos, slashSpeed)
-            //     .SetEase(Ease.OutBack)
-            //     .SetDelay(slashDelay)
-            //     .OnStart(() =>
-            //     {
-            //         _audioSource.pitch = Random.Range(0.7f, 1.3f);
-            //         _audioSource.Play();
-            //     })
-            // );
             yield return tween.WaitForCompletion();
+            // foreach (GameObject gizmo in gizmos)
+            // {
+            //     Destroy(gizmo);
+            // }
         }
         
         // Return to player 
         Tweener tweener = transform.DOMove(player.position + offset, swordSpeed);
-        // tweener.OnUpdate(() =>
-        // {
-        //     if (!(Vector3.Distance(transform.position, player.position + offset) > 0.5f)) return;
-        //     
-        //     Vector3 newPosition = new Vector3(player.position.x, 0, player.position.z) + offset;
-        //     newPosition = RotatePointAroundPivot(newPosition, player.position, player.eulerAngles);
-        //     tweener.ChangeEndValue(newPosition, false);
-        // });
 
         transform.DORotate(Vector3.zero, slashDuration);
         _swordModel.transform.DORotate(Vector3.zero, slashDuration);
